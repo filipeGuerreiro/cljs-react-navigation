@@ -4,6 +4,20 @@
             [reagent.core :as r]
             [re-frame.core :refer [subscribe dispatch dispatch-sync reg-event-db trim-v reg-sub]]))
 
+(defn log-console
+  [x]
+  (.log js/console x))
+
+(defn ->js
+  "Wrapper around clj->js that preserves namespaced keywords"
+  [x]
+  (clj->js x :keyword-fn #(.-fqn %)))
+
+(defn ->clj
+  [x]
+  (js->clj x :keywordize-keys true))
+
+
 (def ref-getStateForAction (atom nil))                      ;; HACK
 
 (reg-event-db
@@ -20,29 +34,32 @@
           type (aget dispatch-args "type")
           action-fn (get reagent/NavigationActionsMap type)
           action (action-fn dispatch-args)
-          new-state (@ref-getStateForAction action routing-state)]
-      (assoc app-db :routing new-state))))
+          new-state (@ref-getStateForAction action (->js routing-state))]
+      (assoc app-db :routing (->clj new-state)))))
 
 (reg-event-db
   ::navigate
   [trim-v]
   (fn [app-db [routeName params]]
+    ;(log-console (str "Navigating to " routeName " with params " params))
     (let [routing-state (get app-db :routing)
           action-fn (get reagent/NavigationActionsMap "Navigation/NAVIGATE")
-          action (action-fn #js {:routeName routeName :params params})
-          new-state (@ref-getStateForAction action routing-state)]
-      (assoc app-db :routing new-state))))
+          action (action-fn (->js {:routeName routeName :params params}))
+          new-state (@ref-getStateForAction action (->js routing-state))]
+      (assoc app-db :routing (->clj new-state)))))
 
 
 (reg-event-db
   ::goBack
   [trim-v]
   (fn [app-db [routeName]]
+    ;(log-console (str "Navigating back to: " routeName))
     (let [routing-state (get app-db :routing)
           action-fn (get reagent/NavigationActionsMap "Navigation/BACK")
-          action (action-fn #js {:routeName routeName})
-          new-state (@ref-getStateForAction action routing-state)]
-      (assoc app-db :routing new-state))))
+          action (action-fn (->js {:routeName routeName}))
+          new-state (@ref-getStateForAction action (->js routing-state))]
+      (log-console (str "  with new state: " new-state))
+      (assoc app-db :routing (->clj new-state)))))
 
 (reg-sub
   ::routing-state
@@ -64,20 +81,21 @@
     (-> main
         .-router
         (as-> router
-            (.getStateForAction router
-                                (.getActionForPathAndParams router (name key)))))))
+              (.getStateForAction router
+                                  (.getActionForPathAndParams router (name key)))))))
 
 (def nil-fn (fn [_]))
 
 (defn router [{:keys [root-router init-route-name add-listener]
-               :or {add-listener nil-fn init-route-name :start-route}
-               :as props}]
+               :or   {add-listener nil-fn init-route-name :start-route}
+               :as   props}]
   (let [routing-sub (subscribe [::routing-state])
         getStateForAction (aget root-router "router" "getStateForAction")]
     (reset! ref-getStateForAction getStateForAction)
     (fn [props]
       (let [routing-state (or @routing-sub
                               (init-state root-router init-route-name))]
+        ;(log-console (str "routing-state: " routing-state))
         [:> root-router {:navigation
                          (addNavigationHelpers
                           (clj->js {:state    routing-state
