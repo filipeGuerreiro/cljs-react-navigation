@@ -58,7 +58,7 @@
           action-fn (get reagent/NavigationActionsMap "Navigation/BACK")
           action (action-fn (->js {:routeName routeName}))
           new-state (@ref-getStateForAction action (->js routing-state))]
-      (log-console (str "  with new state: " new-state))
+      ;(log-console (str "  with new state: " new-state))
       (assoc app-db :routing (->clj new-state)))))
 
 (reg-sub
@@ -97,9 +97,9 @@
                               (init-state root-router init-route-name))]
         ;(log-console (str "routing-state: " routing-state))
         [:> root-router {:navigation
-                         (addNavigationHelpers
-                          (clj->js {:state    routing-state
-                                    :addListener add-listener
-                                    :dispatch (fn [action]
-                                                (let [next-state (getStateForAction action routing-state)]
-                                                  (dispatch [::swap-routing-state next-state])))}))}]))))
+                         (base/addNavigationHelpers
+                           (->js {:state       routing-state
+                                  :addListener add-listener
+                                  :dispatch    (fn [action]
+                                                 (let [next-state (getStateForAction action (->js routing-state))]
+                                                   (dispatch [::swap-routing-state (->clj next-state)])))}))}]))))
