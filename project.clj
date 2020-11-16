@@ -5,11 +5,11 @@
             :url  "https://opensource.org/licenses/MIT"}
   :dependencies [[org.clojure/clojure "1.9.0"]
                  [org.clojure/clojurescript "1.10.238"]
-                 [reagent "0.7.0" :exclusions [cljsjs/react
-                                               cljsjs/react-dom
-                                               cljsjs/react-dom-server
-                                               cljsjs/create-react-class]]
-                 [re-frame "0.10.4"]]
+                 [reagent "0.10.0" :exclusions [cljsjs/react
+                                                cljsjs/react-dom
+                                                cljsjs/react-dom-server
+                                                cljsjs/create-react-class]]
+                 [re-frame "1.1.1"]]
   :plugins [[lein-codox "0.10.3"]]
   :codox {:language :clojurescript}
   :source-paths ["src"])
